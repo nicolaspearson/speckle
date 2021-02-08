@@ -1,0 +1,25 @@
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Generated files
+target
+
+# Git files
+.git
+.gitignore
+
+# Log files
+logs
+*.log
+
+# Miscellaneous files
+.DS_Store
+.editorconfig
+.env
+.prettierrc
+.vscode
+api.http
+LICENSE
+README.md

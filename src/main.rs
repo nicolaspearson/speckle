@@ -1,5 +1,13 @@
+extern crate dotenv;
+extern crate pretty_env_logger;
+#[macro_use]
+extern crate log;
+
+use dotenv::dotenv;
 use mobc_pool::MobcPool;
 use std::convert::Infallible;
+use std::env;
+use std::net::SocketAddr;
 use thiserror::Error;
 use warp::{Filter, Rejection, Reply};
 
@@ -8,10 +16,26 @@ mod mobc_pool;
 type WebResult<T> = std::result::Result<T, Rejection>;
 type Result<T> = std::result::Result<T, Error>;
 
-const REDIS_CONN_STRING: &str = "redis://127.0.0.1/";
+fn api_uri() -> String {
+    match env::var("API_URL") {
+        Ok(s) if !s.is_empty() => s,
+        _ => String::from(String::from("127.0.0.1:3000")),
+    }
+}
+
+fn redis_uri() -> String {
+    match env::var("REDIS_URL") {
+        Ok(s) if !s.is_empty() => s,
+        _ => String::from(String::from("redis://127.0.0.1:6379")),
+    }
+}
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+    pretty_env_logger::init();
+    debug!("Starting app");
+
     let mobc_pool = mobc_pool::connect().await.expect("can create mobc pool");
     let mobc_route = warp::path!("mobc")
         .and(with_mobc_pool(mobc_pool.clone()))
@@ -19,7 +43,8 @@ async fn main() {
 
     let routes = mobc_route;
 
-    warp::serve(routes).run(([0, 0, 0, 0], 8080)).await;
+    let server: SocketAddr = api_uri().parse().expect("Unable to parse socket address");
+    warp::serve(routes).run((server.ip(), server.port())).await;
 }
 
 async fn mobc_handler(pool: MobcPool) -> WebResult<impl Reply> {

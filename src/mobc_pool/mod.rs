@@ -1,4 +1,4 @@
-use crate::{MobcError::*, Result, REDIS_CONN_STRING};
+use crate::{redis_uri, MobcError::*, Result};
 use mobc::{Connection, Pool};
 use mobc_redis::redis::{AsyncCommands, FromRedisValue};
 use mobc_redis::{redis, RedisConnectionManager};
@@ -13,7 +13,7 @@ const CACHE_POOL_TIMEOUT_SECONDS: u64 = 1;
 const CACHE_POOL_EXPIRE_SECONDS: u64 = 60;
 
 pub async fn connect() -> Result<MobcPool> {
-    let client = redis::Client::open(REDIS_CONN_STRING).map_err(RedisClientError)?;
+    let client = redis::Client::open(redis_uri()).map_err(RedisClientError)?;
     let manager = RedisConnectionManager::new(client);
     Ok(Pool::builder()
         .get_timeout(Some(Duration::from_secs(CACHE_POOL_TIMEOUT_SECONDS)))

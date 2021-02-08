@@ -19,14 +19,14 @@ type Result<T> = std::result::Result<T, Error>;
 fn api_uri() -> String {
     match env::var("API_URL") {
         Ok(s) if !s.is_empty() => s,
-        _ => String::from(String::from("127.0.0.1:3000")),
+        _ => String::from("127.0.0.1:3000"),
     }
 }
 
 fn redis_uri() -> String {
     match env::var("REDIS_URL") {
         Ok(s) if !s.is_empty() => s,
-        _ => String::from(String::from("redis://127.0.0.1:6379")),
+        _ => String::from("redis://127.0.0.1:6379"),
     }
 }
 
@@ -50,10 +50,10 @@ async fn main() {
 async fn mobc_handler(pool: MobcPool) -> WebResult<impl Reply> {
     mobc_pool::set_str(&pool, "mobc_hello", "mobc_world", 60)
         .await
-        .map_err(|e| warp::reject::custom(e))?;
+        .map_err(warp::reject::custom)?;
     let value = mobc_pool::get_str(&pool, "mobc_hello")
         .await
-        .map_err(|e| warp::reject::custom(e))?;
+        .map_err(warp::reject::custom)?;
     Ok(value)
 }
 

@@ -21,4 +21,6 @@ services:
         ports:
             - 3000:3000
         environment:
+            API_URL: 0.0.0.0:3000
             REDIS_URL: redis://redis-db:6379
+            RUST_LOG: debug

@@ -1,7 +1,6 @@
 FROM ekidd/rust-musl-builder:latest AS builder
 COPY --chown=rust:rust Cargo.lock .
 COPY --chown=rust:rust Cargo.toml .
-COPY --chown=rust:rust migrations migrations
 COPY --chown=rust:rust src src
 RUN cargo build --release
 

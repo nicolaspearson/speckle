@@ -25,7 +25,7 @@ pub async fn connect() -> Result<MobcPool> {
 
 async fn get_con(pool: &MobcPool) -> Result<MobcCon> {
     pool.get().await.map_err(|e| {
-        eprintln!("error connecting to redis: {}", e);
+        error!("error connecting to redis: {}", e);
         RedisPoolError(e).into()
     })
 }

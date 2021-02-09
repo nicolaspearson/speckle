@@ -4,6 +4,7 @@ extern crate pretty_env_logger;
 extern crate log;
 
 use dotenv::dotenv;
+use jsonwebtoken::dangerous_insecure_decode;
 use mobc_pool::MobcPool;
 use std::convert::Infallible;
 use std::env;
@@ -13,7 +14,18 @@ use thiserror::Error;
 use warp::{Filter, Rejection, Reply};
 
 mod constants;
+mod jwt_utils;
 mod mobc_pool;
+
+// TODO: Remove duplicate
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Jwt {
+    pub roles: [String; 3],
+    pub uuid: String,
+    pub jti: String,
+    pub platform: String,
+}
 
 type WebResult<T> = std::result::Result<T, Rejection>;
 type Result<T> = std::result::Result<T, Error>;
@@ -36,7 +48,7 @@ fn redis_uri() -> String {
 async fn main() {
     dotenv().ok();
     pretty_env_logger::init();
-    debug!("Starting app");
+    debug!("starting app");
 
     let mobc_pool = mobc_pool::connect().await.expect("can create mobc pool");
 
@@ -44,14 +56,14 @@ async fn main() {
         .await
         .expect("fixtures loaded");
 
-    let mobc_route = warp::path!("mobc")
+    let index_route = warp::path!("jwt")
         .and(with_jwt_extractor())
         .and(with_mobc_pool(mobc_pool.clone()))
         .and_then(mobc_handler);
 
-    let routes = mobc_route;
+    let routes = index_route;
 
-    let server: SocketAddr = api_uri().parse().expect("Unable to parse socket address");
+    let server: SocketAddr = api_uri().parse().expect("can parse socket address");
     warp::serve(routes).run((server.ip(), server.port())).await;
 }
 
@@ -60,9 +72,9 @@ async fn load_fixtures(pool: MobcPool) -> WebResult<impl Reply> {
         .duration_since(SystemTime::UNIX_EPOCH)
         .unwrap();
     let epoch = &*epoch_duration.as_secs().to_string();
-    for jwt in &constants::JWTS {
-        debug!("Inserting: key: {}; value: {}", jwt, epoch);
-        mobc_pool::set_str(&pool, jwt, &epoch, 0)
+    for jwt in jwt_utils::get_jwt_fixtures() {
+        debug!("inserting: key: {}; value: {}", jwt, epoch);
+        mobc_pool::set_str(&pool, &jwt, &epoch, 0)
             .await
             .map_err(warp::reject::custom)?;
     }
@@ -82,6 +94,12 @@ fn with_mobc_pool(
 
 async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
     debug!("JWT: {}", jwt);
+    let jwt_claims = dangerous_insecure_decode::<Jwt>(&jwt).expect("");
+    debug!("JWT UUID: {}", jwt_claims.claims.uuid);
+    debug!("JWT JTI: {}", jwt_claims.claims.uuid);
+    // TODO: Find jwt in redis or throw 401, if auth header is missing continue
+    // TODO: See: https://github.com/Keats/jsonwebtoken
+    // TODO: Do not panic when invalid return 401
     mobc_pool::set_str(&pool, "mobc_hello", "mobc_world", 60)
         .await
         .map_err(warp::reject::custom)?;

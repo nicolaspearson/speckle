@@ -1,11 +1,16 @@
 @baseUrl = http://localhost:3000
 
-### Test the base route
-GET {{baseUrl}}/mobc HTTP/1.1
+@invalidToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+@validToken = eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImRldi5taW5kZG9jLmNvbSJ9.eyJjb21tdW5pdHkiOiJhbHBoYSIsImZpYXQiOjE2MDAwODU2NDksImdyb3VwIjoicGF0aWVudCIsImxlZ2FsVGVybXMiOnsiZ21iaCI6ZmFsc2UsIm12eiI6ZmFsc2V9LCJwbGF0Zm9ybSI6IndlYiIsInJvbGVzIjpbImNvbnRlbnQuY2xpZW50IiwidGhlcmFweVNlc3Npb24uY2xpZW50IiwidmlkZW9DaGF0LmNsaWVudCJdLCJ1dWlkIjoiZWNmMGZiMzgtMWZlOS0xMWU4LWEyOTYtMDI0MmFjMTEwMDAyIiwiaWF0IjoxNjAwMDg1NjQ5LCJleHAiOjE2MDAxNzIwNDksImlzcyI6ImRldmVsb3BtZW50QG1pbmRkb2MuY29tIiwianRpIjoiNjM1NDc3MTgtNjNlNy00M2NiLTgxNDMtZWM4MGM4ZTY4ZGY3In0.D64sbetHMgxHGoBlY6UlZI4D9ffI-NvhVisvCfB7Pxqu9gjQ6Tw1e2ACMnDET6RGMAyhfha74g02wHUKQIYF-cddeCLWLP4ynirc-MNKykRaM423gy3WnDOZuUG4LB9bMajGqgYPYo_ub8AE3dvAvLsUm9jDwXz1akb-rz922Ge-9Whs7zp4h3YJhYZ4_auDo8JeoOrbJcxQ1D9iX9bN-Q3vUQF_hsd4KRc-th8gwC-I43ZdMuxWwRKSB315VPSNm8ueFqjNL1YQoobcI7wTWXDOFvEHT_XEgKocSjEpyv6ou1Tq4cn3b8FQsS9jwfYmnPcyt1u0udnpMXU9lya-0A
+
+### Invalid JWT
+GET {{baseUrl}}/jwt HTTP/1.1
 Accept: application/json
 Content-Type: application/json
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+Authorization: Bearer {{invalidToken}}
 
-{
-    "body": "test"
-}
+### Valid JWT
+GET {{baseUrl}}/jwt HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer {{validToken}}

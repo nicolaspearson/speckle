@@ -11,6 +11,7 @@ use std::net::SocketAddr;
 use thiserror::Error;
 use warp::{Filter, Rejection, Reply};
 
+mod constants;
 mod mobc_pool;
 
 type WebResult<T> = std::result::Result<T, Rejection>;
@@ -36,8 +37,12 @@ async fn main() {
     pretty_env_logger::init();
     debug!("Starting app");
 
+    let jwt_extractor = warp::header::<String>(constants::AUTHORIZATION_HEADER)
+        .map(|token: String| token.replace(constants::BEARER_PREFIX, ""));
+
     let mobc_pool = mobc_pool::connect().await.expect("can create mobc pool");
     let mobc_route = warp::path!("mobc")
+        .and(jwt_extractor)
         .and(with_mobc_pool(mobc_pool.clone()))
         .and_then(mobc_handler);
 
@@ -47,7 +52,8 @@ async fn main() {
     warp::serve(routes).run((server.ip(), server.port())).await;
 }
 
-async fn mobc_handler(pool: MobcPool) -> WebResult<impl Reply> {
+async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
+    debug!("JWT: {}", jwt);
     mobc_pool::set_str(&pool, "mobc_hello", "mobc_world", 60)
         .await
         .map_err(warp::reject::custom)?;

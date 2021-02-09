@@ -8,6 +8,7 @@ use mobc_pool::MobcPool;
 use std::convert::Infallible;
 use std::env;
 use std::net::SocketAddr;
+use std::time::SystemTime;
 use thiserror::Error;
 use warp::{Filter, Rejection, Reply};
 
@@ -37,12 +38,14 @@ async fn main() {
     pretty_env_logger::init();
     debug!("Starting app");
 
-    let jwt_extractor = warp::header::<String>(constants::AUTHORIZATION_HEADER)
-        .map(|token: String| token.replace(constants::BEARER_PREFIX, ""));
-
     let mobc_pool = mobc_pool::connect().await.expect("can create mobc pool");
+
+    load_fixtures(mobc_pool.clone())
+        .await
+        .expect("fixtures loaded");
+
     let mobc_route = warp::path!("mobc")
-        .and(jwt_extractor)
+        .and(with_jwt_extractor())
         .and(with_mobc_pool(mobc_pool.clone()))
         .and_then(mobc_handler);
 
@@ -50,6 +53,31 @@ async fn main() {
 
     let server: SocketAddr = api_uri().parse().expect("Unable to parse socket address");
     warp::serve(routes).run((server.ip(), server.port())).await;
+}
+
+async fn load_fixtures(pool: MobcPool) -> WebResult<impl Reply> {
+    let epoch_duration = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .unwrap();
+    let epoch = &*epoch_duration.as_secs().to_string();
+    for jwt in &constants::JWTS {
+        debug!("Inserting: key: {}; value: {}", jwt, epoch);
+        mobc_pool::set_str(&pool, jwt, &epoch, 0)
+            .await
+            .map_err(warp::reject::custom)?;
+    }
+    Ok("fixtures loaded")
+}
+
+fn with_jwt_extractor() -> impl Filter<Extract = (String,), Error = warp::Rejection> + Clone {
+    warp::header::<String>(constants::AUTHORIZATION_HEADER)
+        .map(|token: String| token.replace(constants::BEARER_PREFIX, ""))
+}
+
+fn with_mobc_pool(
+    pool: MobcPool,
+) -> impl Filter<Extract = (MobcPool,), Error = Infallible> + Clone {
+    warp::any().map(move || pool.clone())
 }
 
 async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
@@ -61,12 +89,6 @@ async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
         .await
         .map_err(warp::reject::custom)?;
     Ok(value)
-}
-
-fn with_mobc_pool(
-    pool: MobcPool,
-) -> impl Filter<Extract = (MobcPool,), Error = Infallible> + Clone {
-    warp::any().map(move || pool.clone())
 }
 
 #[derive(Error, Debug)]

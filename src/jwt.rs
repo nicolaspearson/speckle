@@ -1,14 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct JwtClaims {
+pub struct JwtPayload {
     pub roles: [String; 3],
     pub uuid: String,
     pub jti: String,
     pub platform: String,
 }
 
-fn stringify_jwt(jwt: &JwtClaims) -> String {
+fn stringify_jwt(jwt: &JwtPayload) -> String {
     format!(
         "users:development:{}:{}:{}:{}",
         jwt.roles.join(";"),
@@ -19,7 +19,7 @@ fn stringify_jwt(jwt: &JwtClaims) -> String {
 }
 
 pub fn get_jwt_fixtures() -> Vec<String> {
-    let valid_token = &JwtClaims {
+    let valid_token = &JwtPayload {
         roles: [
             String::from("content.client"),
             String::from("therapySession.client"),
@@ -29,7 +29,7 @@ pub fn get_jwt_fixtures() -> Vec<String> {
         jti: String::from("63547718-63e7-43cb-8143-ec80c8e68df7"),
         platform: String::from("web"),
     };
-    let invalid_token = &JwtClaims {
+    let invalid_token = &JwtPayload {
         roles: [
             String::from("content.client"),
             String::from("therapySession.client"),
@@ -39,8 +39,8 @@ pub fn get_jwt_fixtures() -> Vec<String> {
         jti: String::from("42d14c82-739b-4c60-bdaa-94ba5b7de00a"),
         platform: String::from("web"),
     };
-    let jwts: Vec<&JwtClaims> = vec![valid_token, invalid_token];
+    let jwts: Vec<&JwtPayload> = vec![valid_token, invalid_token];
     jwts.into_iter()
-        .map(|jwt: &JwtClaims| stringify_jwt(jwt))
+        .map(|jwt: &JwtPayload| stringify_jwt(jwt))
         .collect()
 }

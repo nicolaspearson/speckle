@@ -5,8 +5,8 @@ use thiserror::Error;
 use warp::http::StatusCode;
 use warp::{Rejection, Reply};
 
-pub type WebResult<T> = result::Result<T, Rejection>;
 pub type Result<T> = result::Result<T, Error>;
+pub type WebResult<T> = result::Result<T, Rejection>;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -53,12 +53,10 @@ pub async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply,
         debug!("unhandled error: {:?}", err);
         (StatusCode::UNAUTHORIZED, "Unauthorized".to_string())
     };
-
     let json = warp::reply::json(&HttpErrorResponse {
         status: code.to_string(),
         message,
     });
-
     Ok(warp::reply::with_status(json, code))
 }
 

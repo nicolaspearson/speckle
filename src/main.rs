@@ -20,7 +20,7 @@ mod errors;
 use fixtures::load_fixtures;
 mod fixtures;
 mod header;
-use jwt::JwtClaims;
+use jwt::JwtPayload;
 mod jwt;
 use pool::MobcPool;
 mod pool;
@@ -59,9 +59,9 @@ fn with_pool(pool: MobcPool) -> impl Filter<Extract = (MobcPool,), Error = Infal
 }
 
 async fn index_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
-    let jwt_claims = decode::<JwtClaims>(&jwt)?;
-    let uuid = jwt_claims.claims.uuid;
-    let jti = jwt_claims.claims.jti;
+    let jwt_payload = decode::<JwtPayload>(&jwt)?;
+    let uuid = jwt_payload.claims.uuid;
+    let jti = jwt_payload.claims.jti;
     debug!("Finding jwt with uuid: {}, and jti: {}", uuid, jti);
     let key = &*format!("*:*:*:{}:{}:*", uuid, jti);
     pool::exists(&pool, String::from(key))

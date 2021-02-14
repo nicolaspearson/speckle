@@ -1,6 +1,6 @@
 use serde::de::DeserializeOwned;
 
-use crate::errors::{new_error, ErrorKind, Result};
+use crate::errors::{JwtError::*, Result};
 use crate::header::Header;
 use crate::serialize::from_jwt_part_claims;
 
@@ -19,7 +19,7 @@ macro_rules! expect_two {
         let mut i = $iter;
         match (i.next(), i.next(), i.next()) {
             (Some(first), Some(second), None) => (first, second),
-            _ => return Err(new_error(ErrorKind::InvalidToken)),
+            _ => return Err(InvalidToken.into()),
         }
     }};
 }

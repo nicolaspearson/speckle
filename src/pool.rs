@@ -4,7 +4,7 @@ use mobc_redis::redis::{AsyncCommands, FromRedisValue};
 use mobc_redis::{redis, RedisConnectionManager};
 use std::time::Duration;
 
-use crate::errors::{ErrorKind, Result};
+use crate::errors::{MobcError::*, Result};
 
 pub type MobcPool = Pool<RedisConnectionManager>;
 pub type MobcCon = Connection<RedisConnectionManager>;
@@ -15,7 +15,7 @@ const CACHE_POOL_TIMEOUT_SECONDS: u64 = 1;
 const CACHE_POOL_EXPIRE_SECONDS: u64 = 60;
 
 pub async fn connect() -> Result<MobcPool> {
-    let client = redis::Client::open(redis_uri()).map_err(ErrorKind::RedisClientError)?;
+    let client = redis::Client::open(redis_uri()).map_err(RedisClientError)?;
     let manager = RedisConnectionManager::new(client);
     Ok(Pool::builder()
         .get_timeout(Some(Duration::from_secs(CACHE_POOL_TIMEOUT_SECONDS)))
@@ -28,25 +28,21 @@ pub async fn connect() -> Result<MobcPool> {
 async fn get_con(pool: &MobcPool) -> Result<MobcCon> {
     pool.get().await.map_err(|e| {
         error!("error connecting to redis: {}", e);
-        ErrorKind::RedisPoolError(e).into()
+        RedisPoolError(e).into()
     })
 }
 
 pub async fn set_str(pool: &MobcPool, key: &str, value: &str, ttl_seconds: usize) -> Result<()> {
     let mut con = get_con(&pool).await?;
-    con.set(key, value)
-        .await
-        .map_err(ErrorKind::RedisCMDError)?;
+    con.set(key, value).await.map_err(RedisCMDError)?;
     if ttl_seconds > 0 {
-        con.expire(key, ttl_seconds)
-            .await
-            .map_err(ErrorKind::RedisCMDError)?;
+        con.expire(key, ttl_seconds).await.map_err(RedisCMDError)?;
     }
     Ok(())
 }
 
 pub async fn get_str(pool: &MobcPool, key: &str) -> Result<String> {
     let mut con = get_con(&pool).await?;
-    let value = con.get(key).await.map_err(ErrorKind::RedisCMDError)?;
-    FromRedisValue::from_redis_value(&value).map_err(|e| ErrorKind::RedisTypeError(e).into())
+    let value = con.get(key).await.map_err(RedisCMDError)?;
+    FromRedisValue::from_redis_value(&value).map_err(|e| RedisTypeError(e).into())
 }

@@ -87,7 +87,7 @@ async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
     debug!("JWT: {}", jwt);
     let jwt_claims = decode::<JwtClaims>(&jwt).expect("");
     debug!("JWT UUID: {}", jwt_claims.claims.uuid);
-    debug!("JWT JTI: {}", jwt_claims.claims.uuid);
+    debug!("JWT JTI: {}", jwt_claims.claims.jti);
     // TODO: Find jwt in redis or throw 401, if auth header is missing continue
     // TODO: See: https://github.com/Keats/jsonwebtoken
     // TODO: Do not panic when invalid return 401

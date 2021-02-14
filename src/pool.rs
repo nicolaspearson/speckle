@@ -1,9 +1,9 @@
-use crate::redis_uri;
 use mobc::{Connection, Pool};
-use mobc_redis::redis::{AsyncCommands, FromRedisValue};
+use mobc_redis::redis::AsyncCommands;
 use mobc_redis::{redis, RedisConnectionManager};
 use std::time::Duration;
 
+use crate::config::redis_uri;
 use crate::errors::{MobcError::*, Result};
 
 pub type MobcPool = Pool<RedisConnectionManager>;
@@ -41,8 +41,18 @@ pub async fn set_str(pool: &MobcPool, key: &str, value: &str, ttl_seconds: usize
     Ok(())
 }
 
-pub async fn get_str(pool: &MobcPool, key: &str) -> Result<String> {
+pub async fn exists(pool: &MobcPool, pattern: String) -> Result<bool> {
     let mut con = get_con(&pool).await?;
-    let value = con.get(key).await.map_err(RedisCMDError)?;
-    FromRedisValue::from_redis_value(&value).map_err(|e| RedisTypeError(e).into())
+    let mut iter: redis::AsyncIter<String> =
+        con.scan_match(pattern).await.map_err(RedisCMDError)?;
+    let mut found_match = false;
+    while let Some(element) = iter.next_item().await {
+        debug!("Found key: {}", element);
+        found_match = true;
+    }
+    if found_match == true {
+        Ok(found_match)
+    } else {
+        Err(RedisKeyNotFoundError.into())
+    }
 }

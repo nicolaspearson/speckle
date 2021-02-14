@@ -23,4 +23,5 @@ services:
         environment:
             API_URL: 0.0.0.0:3000
             REDIS_URL: redis://redis-db:6379
-            RUST_LOG: debug
+            RUST_ENV: STAGING
+            RUST_LOG: info

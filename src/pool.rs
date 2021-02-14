@@ -50,5 +50,9 @@ pub async fn exists(pool: &MobcPool, pattern: String) -> Result<bool> {
         debug!("Found key: {}", element);
         found_match = true;
     }
-    Ok(found_match)
+    if found_match == true {
+        Ok(found_match)
+    } else {
+        Err(RedisKeyNotFoundError.into())
+    }
 }

@@ -42,6 +42,8 @@ pub enum MobcError {
     RedisCMDError(mobc_redis::redis::RedisError),
     #[error("error creating Redis client: {0}")]
     RedisClientError(mobc_redis::redis::RedisError),
+    #[error("redis key not found")]
+    RedisKeyNotFoundError,
 }
 
 pub async fn handle_rejection(err: Rejection) -> std::result::Result<impl Reply, Infallible> {

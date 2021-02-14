@@ -4,7 +4,6 @@ extern crate pretty_env_logger;
 extern crate log;
 
 use dotenv::dotenv;
-use serde::Serialize;
 use std::convert::Infallible;
 use std::env;
 use std::net::SocketAddr;
@@ -85,23 +84,17 @@ fn with_mobc_pool(
     warp::any().map(move || pool.clone())
 }
 
-/// An API message serializable to JSON.
-#[derive(Serialize)]
-struct Message {
-    message: String,
-}
-
 async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
     let jwt_claims = decode::<JwtClaims>(&jwt)?;
     let uuid = jwt_claims.claims.uuid;
     let jti = jwt_claims.claims.jti;
     debug!("Finding jwt with uuid: {}, and jti: {}", uuid, jti);
     let key = &*format!("*:*:*:{}:{}:*", uuid, jti);
-    let found_match = pool::exists(&pool, String::from(key))
+    pool::exists(&pool, String::from(key))
         .await
         .map_err(warp::reject::custom)?;
-    let json = warp::reply::json(&Message {
-        message: format!("{}", found_match),
-    });
-    Ok(warp::reply::with_status(json, StatusCode::OK))
+    Ok(warp::reply::with_status(
+        warp::reply::reply(),
+        StatusCode::OK,
+    ))
 }

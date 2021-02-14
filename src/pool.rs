@@ -1,9 +1,9 @@
-use crate::redis_uri;
 use mobc::{Connection, Pool};
 use mobc_redis::redis::AsyncCommands;
 use mobc_redis::{redis, RedisConnectionManager};
 use std::time::Duration;
 
+use crate::config::redis_uri;
 use crate::errors::{MobcError::*, Result};
 
 pub type MobcPool = Pool<RedisConnectionManager>;

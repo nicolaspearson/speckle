@@ -5,12 +5,13 @@ extern crate log;
 
 use dotenv::dotenv;
 use std::convert::Infallible;
-use std::env;
 use std::net::SocketAddr;
 use warp::http::StatusCode;
 use warp::{Filter, Reply};
 
 mod algorithms;
+use config::{api_uri, environment};
+mod config;
 mod constants;
 use decode::decode;
 mod decode;
@@ -24,27 +25,6 @@ mod jwt;
 use pool::MobcPool;
 mod pool;
 mod serialize;
-
-fn api_uri() -> String {
-    match env::var("API_URL") {
-        Ok(s) if !s.is_empty() => s,
-        _ => String::from("127.0.0.1:3000"),
-    }
-}
-
-fn redis_uri() -> String {
-    match env::var("REDIS_URL") {
-        Ok(s) if !s.is_empty() => s,
-        _ => String::from("redis://127.0.0.1:6379"),
-    }
-}
-
-fn environment() -> String {
-    match env::var("RUST_ENV") {
-        Ok(s) if !s.is_empty() => s,
-        _ => String::from(constants::ENV_DEVELOPMENT),
-    }
-}
 
 #[tokio::main]
 async fn main() {

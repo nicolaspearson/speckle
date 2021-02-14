@@ -1,4 +1,4 @@
-use crate::errors::{Error, JwtError::*, Result};
+use crate::errors::{Error, HttpError::*, Result};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
@@ -60,7 +60,7 @@ impl FromStr for Algorithm {
             "PS384" => Ok(Algorithm::PS384),
             "PS512" => Ok(Algorithm::PS512),
             "RS512" => Ok(Algorithm::RS512),
-            _ => Err(InvalidAlgorithmName.into()),
+            _ => Err(JWTTokenError.into()),
         }
     }
 }

@@ -4,17 +4,19 @@ extern crate pretty_env_logger;
 extern crate log;
 
 use dotenv::dotenv;
+use serde::Serialize;
 use std::convert::Infallible;
 use std::env;
 use std::net::SocketAddr;
 use std::time::SystemTime;
+use warp::http::StatusCode;
 use warp::{Filter, Reply};
 
 mod algorithms;
 mod constants;
 use decode::decode;
 mod decode;
-use errors::WebResult;
+use errors::{handle_rejection, WebResult};
 mod errors;
 mod header;
 use jwt::{get_jwt_fixtures, JwtClaims};
@@ -52,7 +54,7 @@ async fn main() {
         .and(with_mobc_pool(pool.clone()))
         .and_then(mobc_handler);
 
-    let routes = index_route;
+    let routes = index_route.recover(handle_rejection);
 
     let server: SocketAddr = api_uri().parse().expect("can parse socket address");
     warp::serve(routes).run((server.ip(), server.port())).await;
@@ -83,19 +85,23 @@ fn with_mobc_pool(
     warp::any().map(move || pool.clone())
 }
 
+/// An API message serializable to JSON.
+#[derive(Serialize)]
+struct Message {
+    message: String,
+}
+
 async fn mobc_handler(jwt: String, pool: MobcPool) -> WebResult<impl Reply> {
-    debug!("JWT: {}", jwt);
-    let jwt_claims = decode::<JwtClaims>(&jwt).expect("");
-    debug!("JWT UUID: {}", jwt_claims.claims.uuid);
-    debug!("JWT JTI: {}", jwt_claims.claims.jti);
-    // TODO: Find jwt in redis or throw 401, if auth header is missing continue
-    // TODO: See: https://github.com/Keats/jsonwebtoken
-    // TODO: Do not panic when invalid return 401
-    pool::set_str(&pool, "mobc_hello", "mobc_world", 60)
+    let jwt_claims = decode::<JwtClaims>(&jwt)?;
+    let uuid = jwt_claims.claims.uuid;
+    let jti = jwt_claims.claims.jti;
+    debug!("Finding jwt with uuid: {}, and jti: {}", uuid, jti);
+    let key = &*format!("*:*:*:{}:{}:*", uuid, jti);
+    let found_match = pool::exists(&pool, String::from(key))
         .await
         .map_err(warp::reject::custom)?;
-    let value = pool::get_str(&pool, "mobc_hello")
-        .await
-        .map_err(warp::reject::custom)?;
-    Ok(value)
+    let json = warp::reply::json(&Message {
+        message: format!("{}", found_match),
+    });
+    Ok(warp::reply::with_status(json, StatusCode::OK))
 }
